@@ -1,0 +1,331 @@
+**********************************************************************************************************************************************************************************************
+
+// Пример 1
+
+// Исходная версия кода
+
+// Цикломатическая сложность - 10
+
+ private List<PlanCalculable> reflectPlanLimit(Plan plan, TypeOfPlanLimit typeOfPlanLimit, Map<Boolean, Set<Long>> limits, List<PlanCalculable> planCalculables) {
+
+        List<PlanCalculable> result = new ArrayList<>();
+
+        int limitRelationSymbol = 0;
+        if (typeOfPlanLimit.getObjectLimit().contains(">") || typeOfPlanLimit.getObjectLimit().contains("<"))
+            limitRelationSymbol = typeOfPlanLimit.getObjectLimit().contains(">") ? 1 : 2;
+
+        String[] limitTargetFields = typeOfPlanLimit.getFieldLimit().split(Pattern.quote("."));
+
+        if (limits.get(false).isEmpty()) {
+            result = planCalculables;
+        } else {
+            Set<Float> limitedObjectId = getLimitObjectId(plan, typeOfPlanLimit, limits.get(false), limitRelationSymbol, limitTargetFields[limitTargetFields.length - 1]);
+            for (PlanCalculable pc : planCalculables) {
+                Set<Float> pcValue = getValueFromPlanCalculableObject(false, Collections.singletonList(pc), typeOfPlanLimit.getFieldLimit());
+                if (!pcValue.isEmpty() && limitedObjectId.containsAll(pcValue))
+                    result.add(pc);
+            }
+        }
+        if (!limits.get(true).isEmpty()) {
+            Set<Float> limitedObjectId = getLimitObjectId(plan, typeOfPlanLimit, limits.get(true), limitRelationSymbol, limitTargetFields[limitTargetFields.length - 1]);
+            Iterator<PlanCalculable> iterator = result.iterator();
+            while ((iterator.hasNext())) {
+                PlanCalculable pc = iterator.next();
+                if (limitedObjectId.containsAll(getValueFromPlanCalculableObject(false, Arrays.asList(pc), typeOfPlanLimit.getFieldLimit())))
+                    iterator.remove();
+            }
+        }
+        return result;
+    }
+
+
+// Конечная версия кода
+
+// Цикломатическая сложность - 5
+// Использованные приемы избавления от сложности:
+// - Избавился от стандартных циклов for и while, заменив где нужно на более эффективные forEach и removeIf
+// - Избавился от вложенных if и else, теперь любой if всегда приводит к выходу из метода
+// - Избавился от циклов внутри условий
+// - Сократил код с
+//        (if (условие) return true; else return false)
+//                  до
+//        (return условие)
+
+private List<PlanCalculable> reflectPlanLimit(Plan plan, TypeOfPlanLimit typeOfPlanLimit, Map<Boolean, Set<Long>> limits, List<PlanCalculable> planCalculables) {
+
+        if (limits.isEmpty()) return planCalculables;
+
+        int limitRelationSymbol = typeOfPlanLimit.getObjectLimit().contains(">") ? 1 : typeOfPlanLimit.getObjectLimit().contains("<") ? 2 : 0;
+        String[] limitTargetFields = typeOfPlanLimit.getFieldLimit().split(Pattern.quote("."));
+
+        if (limits.get(false).isEmpty()) {
+            List<PlanCalculable> result = planCalculables;
+            Set<Float> limitedObjectId = getLimitObjectId(plan, typeOfPlanLimit, limits.get(true), limitRelationSymbol, limitTargetFields[limitTargetFields.length - 1]);
+            result.removeIf(planCalculable -> limitedObjectId.containsAll(getValueFromPlanCalculableObject(false, Arrays.asList(pc), typeOfPlanLimit.getFieldLimit())))
+            return result;
+        }
+
+        Set<Float> limitedObjectId = getLimitObjectId(plan, typeOfPlanLimit, limits.get(false), limitRelationSymbol, limitTargetFields[limitTargetFields.length - 1]);
+        List<PlanCalculable> planCalculablesForResult = planCalculables;
+        planCalculablesForResult.removeIf(planCalculable -> {
+            Set<Float> pcValue = getValueFromPlanCalculableObject(false, Collections.singletonList(pc), typeOfPlanLimit.getFieldLimit());
+            return pcValue.isEmpty() || !limitedObjectId.containsAll(pcValue);
+        });
+        Set<Float> limitedObjectId = getLimitObjectId(plan, typeOfPlanLimit, limits.get(true), limitRelationSymbol, limitTargetFields[limitTargetFields.length - 1]);
+        planCalculablesForResult.removeIf(planCalculable -> limitedObjectId.containsAll(getValueFromPlanCalculableObject(false, Arrays.asList(pc), typeOfPlanLimit.getFieldLimit())))
+        return planCalculablesForResult;
+}
+
+
+
+**********************************************************************************************************************************************************************************************
+
+
+
+// Пример 2
+
+// Исходная версия кода
+
+// Цикломатическая сложность - 5
+
+fun changePassword(oldPassword: String?, newPassword: String, repeatNewPassword: String) {
+        iChangePasswordFragment.changingPassword()
+        if (!isValidString(oldPassword)) {
+            iChangePasswordFragment.onFailure("Старый пароль не должен быть пустым")
+            return
+        } else if (!isValidString(newPassword)) {
+            iChangePasswordFragment.onFailure("Пароль не должен быть пустым")
+            return
+        } else if (!isValidString(repeatNewPassword)) {
+            iChangePasswordFragment.onFailure("Необходимо повторить пароль")
+            return
+        } else if (newPassword.trim { it <= ' ' } != repeatNewPassword.trim { it <= ' ' }) {
+            iChangePasswordFragment.onFailure("Пароли должны совпадать")
+            return
+        }
+        changingPasswordRepository.changePassword(oldPassword!!, newPassword, object : IChangingPasswordPresenter {
+            override fun success() {
+                iChangePasswordFragment.onSuccess()
+            }
+
+            override fun fail(message: String?) {
+                iChangePasswordFragment.onFailure(message!!)
+            }
+        })
+    }
+
+    private fun isValidString(txt: String?): Boolean = txt?.isNotEmpty() ?: false
+
+
+// Конечная версия кода
+
+// Цикломатическая сложность - 2
+// Использованные приемы избавления от сложности:
+// - Полиморфизм
+// - Избавление от цепочек else-if
+// - Табличная логика
+
+fun changePassword(oldPassword: String?, newPassword: String, repeatNewPassword: String) {
+    iChangePasswordFragment.changingPassword()
+    val validationResult = checkValidationFields(oldPassword, newPassword, repeatNewPassword)
+    if (validationResult is ValidationResult.ErrorValidationResult) {
+        iChangePasswordFragment.onFailure((validationResult as ValidationResult.ErrorValidationResult).error)
+        return
+    }
+    changingPasswordRepository.changePassword(
+        oldPassword!!,
+        newPassword,
+        object : IChangingPasswordPresenter {
+            override fun success() {
+                iChangePasswordFragment.onSuccess()
+            }
+
+            override fun fail(message: String?) {
+                iChangePasswordFragment.onFailure(message!!)
+            }
+        })
+}
+
+//Проверка валидации полей вынесена в отдельный метод, отвечающий только за это
+fun checkValidationFields(
+    oldPassword: String?,
+    newPassword: String,
+    repeatNewPassword: String,
+    validationController: ValidationController
+): ValidationResult {
+    val validationResults = mutableListOf<ValidationResult>()
+    with(validationResults) {
+        add(validationController.validate(ValidationField.Password(oldPassword)))
+        add(validationController.validate(ValidationField.Password(newPassword)))
+        add(validationController.validate(ValidationField.RepeatPassword(newPassword, repeatNewPassword)))
+    }
+    validationResults.forEach {
+        if (it is ValidationResult.ErrorValidationResult) return it
+    }
+    return ValidationResult.SuccessValidationResult
+}
+
+/Интерфейс для валидации полей
+interface ValidationController {
+    fun validate(validationField: ValidationField): ValidationResult
+}
+
+//Типы возможных результатов валидации
+sealed class ValidationResult {
+    object SuccessValidationResult : ValidationResult()
+    class ErrorValidationResult(error: String) : ValidationResult()
+}
+
+//Типы полей для валидации
+sealed class ValidationField {
+    class Username(value: String?) : ValidationField()
+    class Password(value: String?) : ValidationField()
+    class RepeatPassword(password: String?, repeatPassword: String?) : ValidationField()
+}
+
+//Класс бд, который будет использоваться в ValidationController
+//Содержит тип поля, регулярное выражение для проверки валидации и текст, который будет выводиться если валидация не прошла
+//Данный класс позволяет задавать проверку валидации и сообщение об ошибке декларативно, без перекомпиляции проекта
+class Field(val id: Int, val fieldType: Int, val validationExpression: String, val validateErrorReason: String)
+
+
+**********************************************************************************************************************************************************************************************
+
+
+
+// Пример 3
+
+// Исходная версия кода
+
+// Цикломатическая сложность - 8
+
+private fun getNotifications(list: List<Objective>?) {
+        val notes: MutableList<Notification> = ArrayList()
+        if (list == null) notes.add(
+            Notification(
+                1,
+                String.format(resources.getString(R.string.type_of_note1), 0),
+                R.drawable.active_tasks
+            )
+        ) else {
+            notes.clear()
+            notes.add(
+                Notification(
+                    1,
+                    String.format(resources.getString(R.string.type_of_note1), list.size),
+                    R.drawable.active_tasks
+                )
+            )
+            var isTraining = false
+            var isCertification = false
+            var isStoreCheck = false
+            var isAttestation = false
+            for (obj in list) {
+                if (obj.typeOfTaskId == TYPE_OF_TASK_TRAINING_ID) isTraining = true
+                if (obj.typeOfTaskId == TYPE_OF_TASK_ATTESTATION_ID) isAttestation = true
+                if (obj.typeOfTaskId == TYPE_OF_TASK_CERTIFICATION_ID) isCertification = true
+                if (obj.typeOfTaskId == TYPE_OF_TASK_STORE_CHECK_ID) isStoreCheck = true
+            }
+            if (isTraining) notes.add(
+                Notification(
+                    2,
+                    resources.getString(R.string.type_of_note2),
+                    R.drawable.ic_trainig
+                )
+            )
+            if (isCertification || isAttestation) notes.add(
+                Notification(
+                    3,
+                    resources.getString(R.string.type_of_note3),
+                    R.drawable.ic_trainig
+                )
+            )
+            if (isStoreCheck) notes.add(
+                Notification(
+                    4,
+                    resources.getString(R.string.type_of_note4),
+                    R.drawable.ic_trainig
+                )
+            )
+            notifications.setValue(notes)
+        }
+    }
+
+// Конечная версия кода
+
+// Цикломатическая сложность - 2
+// Использованные приемы избавления от сложности:
+// - Избавление от else
+// - Замена классических for на forEach
+// - Избавление от множественных if
+private fun getNotificationsV2(list: List<Objective>?) {
+        val notes: MutableList<Notification> = ArrayList()
+        if (list == null) {
+            notes.add(
+                Notification(
+                    1,
+                    String.format(resources.getString(R.string.type_of_note1), 0),
+                    R.drawable.active_tasks
+                )
+            )
+            return
+        }
+        notes.clear()
+        notes.add(
+            Notification(
+                1,
+                String.format(resources.getString(R.string.type_of_note1), list.size),
+                R.drawable.active_tasks
+            )
+        )
+
+        list.forEach {
+            with(notes) {
+                when (it.typeOfTaskId) {
+                    TYPE_OF_TASK_TRAINING_ID -> add(
+                        Notification(
+                            2,
+                            resources.getString(R.string.type_of_note2),
+                            R.drawable.ic_trainig
+                        )
+                    )
+
+                    TYPE_OF_TASK_ATTESTATION_ID, TYPE_OF_TASK_CERTIFICATION_ID -> add(
+                        Notification(
+                            3,
+                            resources.getString(R.string.type_of_note3),
+                            R.drawable.ic_trainig
+                        )
+                    )
+
+                    TYPE_OF_TASK_STORE_CHECK_ID -> add(
+                        Notification(
+                            4,
+                            resources.getString(R.string.type_of_note4),
+                            R.drawable.ic_trainig
+                        )
+                    )
+                }
+            }
+        }
+        notifications.value = notes
+    }
+
+
+
+**********************************************************************************************************************************************************************************************
+
+
+    Рефлексия и выводы по заданию:
+1.При валидации форм эффективнее всего использовать табличную логику. Для меня как для мобильного разработчика такой
+  подход оказался открытием, позволит не выпускать новую версию приложения при изменении логики валидации, буду
+  обязательно использовать.
+2.Абсолютно новой информацией для меня были различные виды полиморфизма, описанные в статье. Постарался в своем примере
+  реализовать полиморфизм подтипов, но пока неуверенно чувствую себя в этом, буду в сайд-проектах еще тренироваться,
+  применять его в подходящих случаях.
+3.Убедился в том, что от else можно избавиться всегда, если это не получается, то нужно менять архитектурный подход
+  к проблеме.
+4.По мере того, как переписывал код, понял, что с легаси-кодом стало разбираться проще и интереснее
+5.Понял, что в абсолютном большинстве случаев можно избавиться от классических циклов for/while,
+  как минимум используя более эффективные foreach, map из стандартных библиотек для коллекций. Код получается более
+  читаемым и простым для понимания.

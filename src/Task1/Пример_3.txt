@@ -1,0 +1,118 @@
+// Пример 3
+
+// Исходная версия кода
+
+// Цикломатическая сложность - 8
+
+private fun getNotifications(list: List<Objective>?) {
+        val notes: MutableList<Notification> = ArrayList()
+        if (list == null) notes.add(
+            Notification(
+                1,
+                String.format(resources.getString(R.string.type_of_note1), 0),
+                R.drawable.active_tasks
+            )
+        ) else {
+            notes.clear()
+            notes.add(
+                Notification(
+                    1,
+                    String.format(resources.getString(R.string.type_of_note1), list.size),
+                    R.drawable.active_tasks
+                )
+            )
+            var isTraining = false
+            var isCertification = false
+            var isStoreCheck = false
+            var isAttestation = false
+            for (obj in list) {
+                if (obj.typeOfTaskId == TYPE_OF_TASK_TRAINING_ID) isTraining = true
+                if (obj.typeOfTaskId == TYPE_OF_TASK_ATTESTATION_ID) isAttestation = true
+                if (obj.typeOfTaskId == TYPE_OF_TASK_CERTIFICATION_ID) isCertification = true
+                if (obj.typeOfTaskId == TYPE_OF_TASK_STORE_CHECK_ID) isStoreCheck = true
+            }
+            if (isTraining) notes.add(
+                Notification(
+                    2,
+                    resources.getString(R.string.type_of_note2),
+                    R.drawable.ic_trainig
+                )
+            )
+            if (isCertification || isAttestation) notes.add(
+                Notification(
+                    3,
+                    resources.getString(R.string.type_of_note3),
+                    R.drawable.ic_trainig
+                )
+            )
+            if (isStoreCheck) notes.add(
+                Notification(
+                    4,
+                    resources.getString(R.string.type_of_note4),
+                    R.drawable.ic_trainig
+                )
+            )
+            notifications.setValue(notes)
+        }
+    }
+
+// Конечная версия кода
+
+// Цикломатическая сложность - 2
+// Использованные приемы избавления от сложности:
+// - Избавление от else
+// - Замена классических for на forEach
+// - Избавление от множественных if
+private fun getNotificationsV2(list: List<Objective>?) {
+        val notes: MutableList<Notification> = ArrayList()
+        if (list == null) {
+            notes.add(
+                Notification(
+                    1,
+                    String.format(resources.getString(R.string.type_of_note1), 0),
+                    R.drawable.active_tasks
+                )
+            )
+            return
+        }
+        notes.clear()
+        notes.add(
+            Notification(
+                1,
+                String.format(resources.getString(R.string.type_of_note1), list.size),
+                R.drawable.active_tasks
+            )
+        )
+
+        list.forEach {
+            with(notes) {
+                when (it.typeOfTaskId) {
+                    TYPE_OF_TASK_TRAINING_ID -> add(
+                        Notification(
+                            2,
+                            resources.getString(R.string.type_of_note2),
+                            R.drawable.ic_trainig
+                        )
+                    )
+
+                    TYPE_OF_TASK_ATTESTATION_ID, TYPE_OF_TASK_CERTIFICATION_ID -> add(
+                        Notification(
+                            3,
+                            resources.getString(R.string.type_of_note3),
+                            R.drawable.ic_trainig
+                        )
+                    )
+
+                    TYPE_OF_TASK_STORE_CHECK_ID -> add(
+                        Notification(
+                            4,
+                            resources.getString(R.string.type_of_note4),
+                            R.drawable.ic_trainig
+                        )
+                    )
+                }
+            }
+        }
+        notifications.value = notes
+    }
+

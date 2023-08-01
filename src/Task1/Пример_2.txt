@@ -1,0 +1,105 @@
+// Пример 2
+
+// Исходная версия кода
+
+// Цикломатическая сложность - 5
+
+fun changePassword(oldPassword: String?, newPassword: String, repeatNewPassword: String) {
+        iChangePasswordFragment.changingPassword()
+        if (!isValidString(oldPassword)) {
+            iChangePasswordFragment.onFailure("Старый пароль не должен быть пустым")
+            return
+        } else if (!isValidString(newPassword)) {
+            iChangePasswordFragment.onFailure("Пароль не должен быть пустым")
+            return
+        } else if (!isValidString(repeatNewPassword)) {
+            iChangePasswordFragment.onFailure("Необходимо повторить пароль")
+            return
+        } else if (newPassword.trim { it <= ' ' } != repeatNewPassword.trim { it <= ' ' }) {
+            iChangePasswordFragment.onFailure("Пароли должны совпадать")
+            return
+        }
+        changingPasswordRepository.changePassword(oldPassword!!, newPassword, object : IChangingPasswordPresenter {
+            override fun success() {
+                iChangePasswordFragment.onSuccess()
+            }
+
+            override fun fail(message: String?) {
+                iChangePasswordFragment.onFailure(message!!)
+            }
+        })
+    }
+
+    private fun isValidString(txt: String?): Boolean = txt?.isNotEmpty() ?: false
+
+
+// Конечная версия кода
+
+// Цикломатическая сложность - 2
+// Использованные приемы избавления от сложности:
+// - Полиморфизм
+// - Избавление от цепочек else-if
+// - Табличная логика
+
+fun changePassword(oldPassword: String?, newPassword: String, repeatNewPassword: String) {
+    iChangePasswordFragment.changingPassword()
+    val validationResult = checkValidationFields(oldPassword, newPassword, repeatNewPassword)
+    if (validationResult is ValidationResult.ErrorValidationResult) {
+        iChangePasswordFragment.onFailure((validationResult as ValidationResult.ErrorValidationResult).error)
+        return
+    }
+    changingPasswordRepository.changePassword(
+        oldPassword!!,
+        newPassword,
+        object : IChangingPasswordPresenter {
+            override fun success() {
+                iChangePasswordFragment.onSuccess()
+            }
+
+            override fun fail(message: String?) {
+                iChangePasswordFragment.onFailure(message!!)
+            }
+        })
+}
+
+//Проверка валидации полей вынесена в отдельный метод, отвечающий только за это
+fun checkValidationFields(
+    oldPassword: String?,
+    newPassword: String,
+    repeatNewPassword: String,
+    validationController: ValidationController
+): ValidationResult {
+    val validationResults = mutableListOf<ValidationResult>()
+    with(validationResults) {
+        add(validationController.validate(ValidationField.Password(oldPassword)))
+        add(validationController.validate(ValidationField.Password(newPassword)))
+        add(validationController.validate(ValidationField.RepeatPassword(newPassword, repeatNewPassword)))
+    }
+    validationResults.forEach {
+        if (it is ValidationResult.ErrorValidationResult) return it
+    }
+    return ValidationResult.SuccessValidationResult
+}
+
+/Интерфейс для валидации полей
+interface ValidationController {
+    fun validate(validationField: ValidationField): ValidationResult
+}
+
+//Типы возможных результатов валидации
+sealed class ValidationResult {
+    object SuccessValidationResult : ValidationResult()
+    class ErrorValidationResult(error: String) : ValidationResult()
+}
+
+//Типы полей для валидации
+sealed class ValidationField {
+    class Username(value: String?) : ValidationField()
+    class Password(value: String?) : ValidationField()
+    class RepeatPassword(password: String?, repeatPassword: String?) : ValidationField()
+}
+
+//Класс бд, который будет использоваться в ValidationController
+//Содержит тип поля, регулярное выражение для проверки валидации и текст, который будет выводиться если валидация не прошла
+//Данный класс позволяет задавать проверку валидации и сообщение об ошибке декларативно, без перекомпиляции проекта
+class Field(val id: Int, val fieldType: Int, val validationExpression: String, val validateErrorReason: String)
