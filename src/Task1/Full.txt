@@ -258,6 +258,7 @@ private fun getNotifications(list: List<Objective>?) {
 // - Избавление от else
 // - Замена классических for на forEach
 // - Избавление от множественных if
+// - Табличная логика
 private fun getNotificationsV2(list: List<Objective>?) {
         val notes: MutableList<Notification> = ArrayList()
         if (list == null) {
@@ -279,41 +280,41 @@ private fun getNotificationsV2(list: List<Objective>?) {
             )
         )
 
-        list.forEach {
-            with(notes) {
-                when (it.typeOfTaskId) {
-                    TYPE_OF_TASK_TRAINING_ID -> add(
-                        Notification(
-                            2,
-                            resources.getString(R.string.type_of_note2),
-                            R.drawable.ic_trainig
-                        )
+        list.forEach { objective ->
+            noteNotificationList.find { objective.typeOfTaskId == it.id }?.let {
+                notes.add(
+                    Notification(
+                        it.id,
+                        it.notificationMessage,
+                        getIcon(it.id)
                     )
-
-                    TYPE_OF_TASK_ATTESTATION_ID, TYPE_OF_TASK_CERTIFICATION_ID -> add(
-                        Notification(
-                            3,
-                            resources.getString(R.string.type_of_note3),
-                            R.drawable.ic_trainig
-                        )
-                    )
-
-                    TYPE_OF_TASK_STORE_CHECK_ID -> add(
-                        Notification(
-                            4,
-                            resources.getString(R.string.type_of_note4),
-                            R.drawable.ic_trainig
-                        )
-                    )
-                }
+                )
             }
+          }
         }
         notifications.value = notes
     }
 
+//Класс бд для хранения разных типов нотификаций
+data class NoteNotification(val id: Int, val notificationMessage: String)
+
+
 
 
 **********************************************************************************************************************************************************************************************
+
+Резюме по теме
+
+Приемы снижения ЦС:
+1. Никаких условных операторов и switch/case
+2. Никаких циклов (for, while)
+3. Никаких null/None...
+4. Полиморфизм
+    4.1 Полиморфизм подтипов, Ad Hoc полиморфизм
+    4.2 Параметрический полиморфизм
+5. Multiple Dispatch, генерики
+6. Табличная логика
+7. Не определять методы, которые ничего не вычисляют (как вариант - возвращать статус выполнения)
 
 
     Рефлексия и выводы по заданию:
