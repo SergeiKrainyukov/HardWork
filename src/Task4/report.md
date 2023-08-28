@@ -3,5 +3,5 @@
 ## Решение
 
 - [Пример 1](case1/report.md)
-- [case2 report](case2/report.md)
-- [case3 report](case2/report.md)
+- [Пример 2](case2/report.md)
+- [Пример 3](case3/report.md)
