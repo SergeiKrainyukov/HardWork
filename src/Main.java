@@ -1,13 +1,21 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
         A a = new A();
-        System.out.println(a.a);
+        String s = "";
+        a.foo(s);
+        Set<String> list;
+        list.remove("");
+        Map map;
+        map.forEach();
     }
 }
 
 class A {
     int a;
+
+    public <T> void foo (T t) {
+
+    }
 }
