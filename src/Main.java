@@ -2,20 +2,16 @@ import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
-        A a = new A();
-        String s = "";
-        a.foo(s);
-        Set<String> list;
-        list.remove("");
-        Map map;
-        map.forEach();
+        String s = "sdgdfsg";
+        assert s.length() < 4;
+        System.out.println(s);
     }
 }
 
 class A {
     int a;
 
-    public <T> void foo (T t) {
+    public <T> void foo(T t) {
 
     }
 }
