@@ -1,3 +1,5 @@
+import java.util.Scanner
+
 // Миксин с базовым поведением
 interface Printable {
     fun print()
@@ -26,8 +28,12 @@ class BasicColorable : Colorable {
 class Printer : Printable by BasicPrintable(), Colorable by BasicColorable()
 
 fun main() {
-    val printer = Printer()
-
-    printer.print() // Вывод: Printing...
-    printer.setColor("Red") // Вывод: Setting color to Red
+//    val printer = Printer()
+//
+//    printer.print() // Вывод: Printing...
+//    printer.setColor("Red") // Вывод: Setting color to Red
+    val scanner = Scanner(System.`in`)
+    val a = scanner.nextInt()
+    val b = scanner.nextInt()
+    print(a+b)
 }
