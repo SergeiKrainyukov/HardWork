@@ -1,6 +1,6 @@
 ## Задание 26
 
-Примеры того, когда ошибочно полагался на дефолтную работу.
+### Примеры того, когда ошибочно полагался на дефолтную работу:
 
 ### Пример 1
 
@@ -115,3 +115,115 @@ interface QuestionnaireInteractor {
 я понял, что надо обязательно сначала проверить валидность ответа, и только потом уже
 пытаться его сохранить. В данном случае это можно отнести к чужой ошибке, так как у меня не
 было никаких сведений о том, в каком порядке я должен вызывать данные функции.
+
+### Исправления:
+
+### Пример 1
+
+Было:
+
+```kotlin
+ private fun setUniqueOffersButtons(view: View) {
+        val categories: List<Category> = CategoriesKeeper.getInstance().getCategories()
+        val promotionProducts: MutableList<Product> = ArrayList<Product>()
+        val salesProducts: MutableList<Product> = ArrayList<Product>()
+        val newProducts: MutableList<Product> = ArrayList<Product>()
+        for (category in categories) {
+            for (product in category.getProductList()) {
+                try {
+                    when (product.status) {
+                        "Акции и предложения" -> promotionProducts.add(product)
+                        "Распродажи" -> salesProducts.add(product)
+                        "Новинки" -> newProducts.add(product)
+                    }
+                } catch (e: Exception) {
+                    System.out.println(("Product " + product.id) + " has called problem")
+                }
+            }
+        }
+        view.findViewById<View>(R.id.promotions)
+            .setOnClickListener { view1: View? ->
+                createUniqueOfferFragment(
+                    promotionProducts,
+                    "Акции и предложения",
+                )
+            }
+        view.findViewById<View>(R.id.new_products)
+            .setOnClickListener { view1: View? ->
+                createUniqueOfferFragment(
+                    newProducts,
+                    "Новинки",
+                )
+            }
+        view.findViewById<View>(R.id.sales_products)
+            .setOnClickListener { view1: View? ->
+                createUniqueOfferFragment(
+                    salesProducts,
+                    "Распродажи",
+                )
+            }
+    }
+
+class Product(
+    var status: String?,
+    //другие поля
+)
+
+class Category(val name: String, val productList: List<Product>)
+```
+
+Стало:
+
+```kotlin
+private fun setUniqueOffersButtonsV2(
+        view: View,
+        viewTypes: List<ViewType>,
+    ) {
+        viewTypes.forEach { viewType ->
+            view.findViewById<View>(viewType.viewId)
+                .setOnClickListener {
+                    createUniqueOfferFragment(
+                        CategoriesKeeper.getCategories().flatMap { it.productList.filter { it.status == viewType.status } },
+                        viewType.status.statusName,
+                    )
+                }
+        }
+    }
+
+class Product(
+    var status: Status?,
+    //другие поля
+)
+
+enum class Status(val statusName: String) {
+    PROMOTIONS("Акции и предложения"),
+    NOVELTIES("Новинки"),
+    SALES("Распродажи"),
+}
+
+data class ViewType(
+    val status: Status,
+    @IdRes val viewId: Int,
+)
+
+class Category(val name: String, val productList: List<Product>)
+```
+
+
+### Пример 2
+
+Было:
+
+```kotlin
+interface EventsRepository {
+    suspend fun getEvents(): List<Event>
+}
+```
+
+```kotlin
+interface EventsRepository {
+    //Постусловие: Возвращается список событий, отсортированный по дате 
+    //от ближайшей к наиболее поздней
+    suspend fun getEvents(): List<Event>
+}
+```
