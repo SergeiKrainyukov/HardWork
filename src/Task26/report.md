@@ -6,7 +6,7 @@
 
 Недавно в рабочем проекте столкнулся с ситуацией, когда использовал FragmentResult api для возврата
 значения из одного фрагмента в другой совместно с использованием ViewPager2 для отображения
-фрагментов во вкладках. Я вешал слушатель событий в методе жц onCreate(), и не знал, что ViewPager
+фрагментов во вкладках. Я вешал слушатель событий в методе жизненного цикла onCreate(), и не знал, что ViewPager
 только единожды создает фрагменты и кеширует их, а также я думал, что у каждого фрагмента будет свой
 result listener.
 
@@ -37,8 +37,7 @@ result listener.
     }
 ```
 
-Здесь была моя вина, поленился качественно изучить документацию и разобраться в его работе, делал
-больше на автомате.
+Здесь была моя вина, поленился качественно изучить документацию и разобраться в его работе, делал скорее на автомате.
 
 ### Пример 2
 
@@ -79,7 +78,7 @@ viewModelScope.launch {
 ```
 
 В данном случае я также не удосужился достаточно хорошо разобраться в документации, хотя там такой
-случай рассматривается, хоть и не в разделе для начинающих.
+случай рассматривается, но не в разделе для начинающих.
 
 ### Пример 3
 
@@ -87,23 +86,11 @@ viewModelScope.launch {
 ```kotlin
 interface QuestionnaireInteractor {
 
-    //Создаем запись в t_Requests. Тип запроса - добавление плательщика или точки доставки
-    fun createRequestToAddAddress(typeOfAddressId: Long): UUID
-
-    //Создаем запись в t_Requests. Тип запроса - редактирование плательщика или точки доставки
-    fun createRequestToEditAddress(addressId: Long): UUID
-
-    fun getGroups(requestUid: UUID): Flow<List<Group>>
-
     fun validateAnswer(requestUid: UUID, question: Question, value: String?): Boolean
 
     fun saveAnswer(requestUid: UUID, question: Question, value: String?)
-
-    suspend fun getAnswerCode(id: Long): String
-
-    suspend fun getDescriptionsByTypeOfCodeValueId(id: Long): List<String>
-
-    fun closeRequest(requestUid: UUID)
+    
+    //Другие методы
 }
 ```
 
@@ -111,7 +98,7 @@ interface QuestionnaireInteractor {
 вопрос анкеты должен сначала пройти валидацию на корректное значение, а затем уже быть
 сохранен. Однако документации по проекту не ведется и в самом коде нет никаких комментариев
 по поводу данной логики. Поэтому я, приступая к реализации UI, сразу пытался сохранить ответ
-в бд, что иногда приводило к странным ошибкам. Только после уточнения у ведущего разработчика
+в бд, что иногда приводило к некорректному поведению. Только после уточнения у ведущего разработчика
 я понял, что надо обязательно сначала проверить валидность ответа, и только потом уже
 пытаться его сохранить. В данном случае это можно отнести к чужой ошибке, так как у меня не
 было никаких сведений о том, в каком порядке я должен вызывать данные функции.
@@ -120,9 +107,26 @@ interface QuestionnaireInteractor {
 
 ### Пример 1
 
+Есть метод, который получает данные по нескольким категориям продуктов и затем присваивает их соответствующим
+ui-компонентам. Каждый продукт в категории имеет определенный статус, который задан строкой. В исходной версии
+кода мы проверяем строки на соответствие заданным, и выполняем далее какую-то логику. Это плохой подход,
+так как при добавлении какого-то нового статуса мы никогда об этом не узнаем, а даже если узнаем и добавим новый
+if, то есть вероятность опечатки, из-за чего код станет работать некорректно во время выполнения. Поэтому в данной версии
+кода осуществляется проверка try-catch "на всякий случай", если что-то пойдет не так. Поэтому имеет
+смысл изменить тип статуса продукта на строго определенный и ограниченный по возможным вариантам, для чего отлично
+подходит enum.
+
 Было:
 
 ```kotlin
+
+class Product(
+    var status: String?,
+    //другие поля
+)
+
+class Category(val name: String, val productList: List<Product>)
+
  private fun setUniqueOffersButtons(view: View) {
         val categories: List<Category> = CategoriesKeeper.getInstance().getCategories()
         val promotionProducts: MutableList<Product> = ArrayList<Product>()
@@ -163,19 +167,12 @@ interface QuestionnaireInteractor {
                 )
             }
     }
-
-class Product(
-    var status: String?,
-    //другие поля
-)
-
-class Category(val name: String, val productList: List<Product>)
 ```
 
 Стало:
 
 ```kotlin
-private fun setUniqueOffersButtonsV2(
+private fun setUniqueOffersButtons(
         view: View,
         viewTypes: List<ViewType>,
     ) {
@@ -191,7 +188,7 @@ private fun setUniqueOffersButtonsV2(
     }
 
 class Product(
-    var status: Status?,
+    var status: Status,
     //другие поля
 )
 
@@ -209,21 +206,108 @@ data class ViewType(
 class Category(val name: String, val productList: List<Product>)
 ```
 
+Благодаря данному изменению, во-первых, код становится переиспользуемым, потому что мы точно знаем, какие статусы
+могут быть у продукта, а во-вторых более лаконичным, так как теперь нужные категории продуктов можно очень удобно 
+фильтровать по статусу не боясь ошибиться при сравнении конкретных строк. Никакие проверки if-else, switch-case и 
+try-catch становятся не нужны.
 
 ### Пример 2
+
+В Андроид в классе Fragment есть метод жизненного цикла onCreateView(), где создается родительский контейнер, в который будут
+вложены другие виджеты и элементы UI. При программном создании элемента можно явно создать объект, который будет
+использован в качестве корневого контейнера. В исходной версии кода так и просходит, однако затем в других методах
+чтобы вложить что-то в родительский контейнер, нужно делать явный каст, который может быть небезопасным, и к тому
+же мы каждый раз должны предполагать, что родительским является именно тот контейнер, который нам нужен.
+В таком случае создать отдельное поле для хранения данного контейнера и обращаться непосредственно к нему в других
+методах.
 
 Было:
 
 ```kotlin
-interface EventsRepository {
-    suspend fun getEvents(): List<Event>
+class QuestionsListFragment : Fragment() {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ) = ScrollView(requireContext())
+}
+
+private fun bindViewModel() {
+    
+    //получение корневой view
+    (requireView() as? ScrollView)?.apply {
+        addView(layout)
+    }
+        
 }
 ```
 
+Стало:
+
 ```kotlin
-interface EventsRepository {
-    //Постусловие: Возвращается список событий, отсортированный по дате 
-    //от ближайшей к наиболее поздней
-    suspend fun getEvents(): List<Event>
+class QuestionsListFragment : Fragment() {
+
+    lateinit var rootContainer: ScrollView
+    
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ) = ScrollView(requireContext()).apply { rootContainer = this }
+}
+
+private fun bindViewModel() {
+
+    //получение корневой view
+    rootContainer.addView(layout)
+    
+
 }
 ```
+
+Код стал лаконичнее, и были убраны лишние проверки, мы теперь точно знаем какой тип у родительского контейнера.
+
+### Пример 3
+
+Рассмотрим, как можно исправить класс из последнего примера предыдущего блока. В исходной версии есть несколько
+минусов:
+
+Во-первых, неочевидно, что нужно вызывать сначала validateAnswer(), а затем saveAnswer(). 
+
+Во-вторых, о результате выполнения saveAnswer() мы можем только догадываться или надеяться, что он выполнится успешно.
+
+Также оба метода имеют одинаковую сигнатуру, что косвенно намекает нам о том, что можно было бы их объединить.
+
+Было:
+
+```kotlin
+interface QuestionnaireInteractor {
+
+    fun validateAnswer(requestUid: UUID, question: Question, value: String?): Boolean
+
+    fun saveAnswer(requestUid: UUID, question: Question, value: String?)
+    
+    //Другие методы
+}
+```
+
+Стало:
+
+```kotlin
+interface QuestionnaireInteractor {
+
+    fun saveAnswer(requestUid: UUID, question: Question, value: String?): Flow<Result>
+    
+    //Другие методы
+}
+
+sealed class Result {
+    data object Success : Result()
+    class Error(error: Throwable): Result()
+}
+```
+
+В результирующей версии кода оба метода объединены в один, который возвращает строго определенный тип результата,
+либо Success, либо Error с описанием ошибки. Таким образом, мы сократили количество возможных состояний до двух, и 
+нам не нужно предполагать или догадываться о том, что же произошло.
+
+### Выводы
+
