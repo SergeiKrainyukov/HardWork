@@ -1,4 +1,6 @@
-import java.util.Scanner
+import java.util.*
+import javax.xml.stream.events.Comment
+
 
 // Миксин с базовым поведением
 interface Printable {
@@ -35,5 +37,5 @@ fun main() {
     val scanner = Scanner(System.`in`)
     val a = scanner.nextInt()
     val b = scanner.nextInt()
-    print(a+b)
+    print(a + b)
 }
