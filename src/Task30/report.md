@@ -61,24 +61,34 @@ class SectionsToContainersMapperImpl @Inject constructor(): SectionToContainersM
 
 ### Пример 2
 
+В данном случае метод initViews() инициализирует разные типы представлений, в каждом случае присваивая различную
+логику. Так как эта логика очень простая и в большинстве случаев занимает одну строчку, то выносить каждый слушатель
+в отдельный метод было бы оверинжинирнгом, поэтому лучще написать краткий комментарий для облегчения понимания кода.
+
 ```kotlin
 private fun initViews() {
+        
+        //Создаем адаптер для RecyclerView
         dpA = DeliveryPointsAdapter(viewModel)
 
+        //При клике на toolbar возвращаемся на предыдущий фрагмент
         findView<MaterialToolbar>(R.id.toolbar)?.setNavigationOnClickListener {
             navigation.goBack()
         }
 
+        //Присваиваем адаптер для RecyclerView
         findView<RecyclerView>(R.id.dpList)?.apply {
             adapter = dpA
             layoutManager =
                 LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         }
 
+        //При изменении значения в поисковом поле обновляем вью модель
         findView<TextInputEditText>(R.id.searchField)?.addTextChangedListener {
             viewModel.searchPatternIsChanged(it)
         }
 
+        //При нажатии на кнопку создания торговой точки посылаем команду во вью модель на создание точки
         findView<TextView>(R.id.create_new_dp)?.setOnClickListener {
             viewModel.createNewDeliveryPoint()
         }
@@ -87,7 +97,10 @@ private fun initViews() {
 
 ### Пример 3
 
-
+Из данного следовало бы убрать строчку viewModel._searchText = it.toString(), чтобы он отвечал строго за одну
+функциональность, но это потянуло за собой множество других изменений в других частях программы, так как
+система изначально была спроектирована не очень хорошо, поэтому было решено просто добавить комментарий для
+более легкого понимания кода.
 
 ```kotlin
 private fun updateAdapter(text: Editable?) {
@@ -108,6 +121,9 @@ private fun updateAdapter(text: Editable?) {
 ```
 
 ### Пример 4
+
+В данном примере без комментария было бы не совсем очевидно, зачем нужен вызов метода removeAllViews(), и могли
+возникнуть вопросы, либо какой-то разработчик мог бы посчитать, что этот метод вовсе не нужен, и удалить его.
 
 ```kotlin
 private fun createLayout(containersWithQuestions: List<ContainerWithQuestions>) {
@@ -142,9 +158,12 @@ private fun createLayout(containersWithQuestions: List<ContainerWithQuestions>) 
 
 ### Пример 5
 
+В данном случае метод onError() сочетает в себе довольно разнообразную логику при возникновении какой-либо ошибки.
+Благодаря комментариям стало легче понимать, что происходит.
+
 ```java
 public void onError(Throwable e) {
-    //Отправить сообщение об ошибке в FirebaseCrashlytics
+        //Отправить сообщение об ошибке в FirebaseCrashlytics
         FirebaseCrashlytics.getInstance().recordException(e);
                                 
         //Вывести сообщение об ошибке в лог
@@ -165,4 +184,6 @@ public void onError(Throwable e) {
 коллег стал замечать, что и классы, и функции, могут совмещать в себе большое количество логики, относящейся
 к совершенно различным по смыслу частям. Каждый раз возникал вопрос: а можно/нужно ли это переписать, чтобы
 код был более хорошо скомпонован по смыслу и соблюдался принцип Single Responsibility? В каких-то случаях
-это было бы вполне оправдано.
+это было бы вполне оправдано, часто это повлекло за собой изменения во множестве других мест программы, что
+наглядно демонстрирует плохую архитектуру проекта. Теперь более тщательно продумываю свой код, чтобы таких
+ситуаций было как можно меньше.
