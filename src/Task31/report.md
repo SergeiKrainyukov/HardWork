@@ -79,3 +79,60 @@ data class AdaptPlanListItem(
     
 }
 ```
+
+### Пример 2
+### Было
+```kotlin
+class GetAdaptPlansUseCase
+@Inject
+constructor(
+    private val plansRepository: PlansRepository,
+) {
+    suspend operator fun invoke() = plansRepository.getAdaptPlans()
+}
+
+class AdaptPlansFragmentViewModel
+@Inject
+constructor(
+    private val useCase: UseCase<AdaptPlan>,
+) : ViewModel() {
+    //...
+}
+```
+
+### Стало
+```kotlin
+class GetAdaptPlansUseCase
+@Inject
+constructor(
+    private val plansRepository: PlansRepository,
+) : UseCase<AdaptPlan> {
+    override suspend operator fun invoke() = plansRepository.getAdaptPlans()
+}
+
+interface UseCase<T> {
+    suspend fun invoke(): List<T>
+}
+
+class AdaptPlansFragmentViewModel
+@Inject
+constructor(
+    useCase: UseCase<AdaptPlan>,
+) : BaseViewModel<AdaptPlan>(useCase) {
+    val adaptListState = state.map { it.map { AdaptPlanListItem.fromModel(it) } }
+}
+
+open class BaseViewModel<T>(val useCase: UseCase<T>) : ViewModel() {
+    private var _state = MutableSharedFlow<List<T>>()
+    val state: SharedFlow<List<T>>
+        get() = _state.asSharedFlow()
+
+    fun init() {
+        viewModelScope.launch(CoroutineExceptionHandler { _, throwable -> throwable.printStackTrace() }) {
+            val entities = useCase.invoke()
+            _state.emit(entities)
+        }
+    }
+}
+
+```
