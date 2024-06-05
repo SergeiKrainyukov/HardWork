@@ -136,3 +136,132 @@ open class BaseViewModel<T>(val useCase: UseCase<T>) : ViewModel() {
 }
 
 ```
+
+### Пример 3
+### Было
+```kotlin
+class StagesListAdapter : ListAdapter<StageListItem, StageViewHolder>(TaskItemDiffCallback()) {
+    var onClickStage: ((StageListItem) -> Unit)? = null
+
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): StageViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_stage, parent, false)
+        return StageViewHolder(view)
+    }
+
+    override fun onBindViewHolder(
+        holder: StageViewHolder,
+        position: Int,
+    ) {
+        holder.bind(currentList[position])
+        holder.itemView.setOnClickListener {
+            onClickStage?.invoke(currentList[position])
+        }
+    }
+}
+```
+
+### Стало
+```kotlin
+class StagesListAdapter(
+    private val onClickStage: (StageListItem) -> Unit
+) : ListAdapter<StageListItem, StageViewHolder>(TaskItemDiffCallback()) {
+
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): StageViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_stage, parent, false)
+        return StageViewHolder(view, onClickStage)
+    }
+
+    override fun onBindViewHolder(
+        holder: StageViewHolder,
+        position: Int,
+    ) {
+        holder.bind(currentList[position])
+    }
+}
+
+
+open class ClickableViewHolder<T>(
+    val view: View,
+    val onClick: (T) -> Unit,
+) : RecyclerView.ViewHolder(view) {
+    open fun bind(item: T) {
+        view.setOnClickListener { onClick.invoke(item) }
+    }
+}
+
+class StageViewHolder(view: View, onclick: (StageListItem) -> Unit) :
+    ClickableViewHolder<StageListItem>(view, onclick) {
+    override fun bind(stage: StageListItem) {
+        super.bind(stage)
+        view.findViewById<TextView>(R.id.task_name_tv).text = stage.name
+        view.findViewById<TextView>(R.id.description_tv).text =
+            Html.fromHtml(stage.description, Html.FROM_HTML_MODE_COMPACT)
+        view.findViewById<TextView>(R.id.created_date_tv).text = stage.date
+        view.findViewById<TextView>(R.id.status_tv).text = stage.status
+    }
+}
+```
+
+### Пример 4
+### Было
+```kotlin
+val document = Gson().fromJson(requestWrapper.data, DocumentDto::class.java)
+```
+
+### Стало
+```kotlin
+inline fun <reified T> fromJson(json: String): T {
+    return Gson().fromJson(json, T::class.java)
+}
+
+inline fun <reified T> toJson(t: T): String {
+    return Gson().toJson(t, T::class.java)
+}
+
+val document = fromJson<DocumentDto>(requestWrapper.data)
+```
+
+### Пример 5
+
+### Было
+```kotlin
+private fun bindViewModel() {
+    lifecycleScope.launch {
+        viewModel.stageDataState.flowWithLifecycle(
+            lifecycle,
+            Lifecycle.State.RESUMED,
+        ).collectLatest {
+            it?.let(::setViews)
+        }
+    }
+}
+```
+
+### Стало
+```kotlin
+fun <T> Fragment.collectFlow(
+    flow: Flow<T>,
+    action: (T) -> Unit,
+) {
+    lifecycleScope.launch {
+        flow.flowWithLifecycle(
+            lifecycle,
+            Lifecycle.State.RESUMED,
+        ).collectLatest {
+            action(it)
+        }
+    }
+}
+
+private fun bindViewModel() {
+    collectFlow(viewModel.stageDataState.filterNotNull(), ::setViews)
+}
+```
+
+### Выводы
