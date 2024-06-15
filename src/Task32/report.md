@@ -41,31 +41,62 @@ fun <A, B> zip(list1: List<A>, list2: List<B>): List<Pair<A, B>> {
 
 ### Было
 ```kotlin
-fun selectionSort(list: List<Int>): List<Int> {
-    if (list.isEmpty()) return emptyList()
-    val min = list.minOrNull() ?: return emptyList()
-    return listOf(min) + selectionSort(list.filter { it != min })
+fun calculateInputs(groups: List<Group>, maxQuestionsCount: Int) = groups.flatMap { group ->
+    when {
+        !group.isSplittable || group.sections.size <= maxQuestionsCount + 2 -> listOf(group)
+        else -> group.sections.chunked(maxQuestionsCount)
+            .fold(emptyList<List<Section>>()) { accumulator, list ->
+                when {
+                    list.size <= 2 -> accumulator.dropLast(1) + listOf(accumulator.last() + list)
+                    else -> accumulator + listOf(list)
+                }
+            }.map { group.copy(sections = it) }
+    }
 }
 
 ```
 
 ### Стало
 ```kotlin
-fun selectionSortCoRecursive(list: List<Int>): List<Int> {
-    // Вопрос 1: Когда результат будет пуст?
-    // Ответ: Когда входной список пуст.
-    if (list.isEmpty()) return emptyList()
+ fun calculateInputs(groups: List<Group>, maxQuestionsCount: Int): List<Group> {
+    // Строим выходной список, обрабатывая каждую группу
+    return buildOutput(groups, maxQuestionsCount)
+}
 
-    // Вопрос 2: Если результат не пуст, то какова его голова?
-    // Ответ: Минимальное значение из входного списка.
-    val min = list.minOrNull() ?: return emptyList()
+// Функция, которая обрабатывает отдельную группу и возвращает список групп
+fun processGroup(group: Group, maxQuestionsCount: Int): List<Group> {
+    return when {
+        // Если группа неразделима или количество секций меньше или равно допустимому максимуму + 2
+        !group.isSplittable || group.sections.size <= maxQuestionsCount + 2 -> listOf(group)
+        else -> {
+            // Разбиваем секции группы на подсписки, каждый из которых имеет размер не более maxQuestionsCount
+            val chunkedSections = group.sections.chunked(maxQuestionsCount)
 
-    // Вопрос 3: Из каких данных рекурсивно строится хвост результата?
-    // Ответ: Входной список без минимального элемента.
-    val tail = selectionSortCoRecursive(list.filter { it != min })
+            // Результирующий список списков секций
+            val foldedSections = chunkedSections.fold(emptyList<List<Section>>()) { accumulator, list ->
+                when {
+                    list.size <= 2 -> accumulator.dropLast(1) + listOf(accumulator.last() + list)
+                    else -> accumulator + listOf(list)
+                }
+            }
 
-    // Комбинируем голову и хвост, формируя результат
-    return listOf(min) + tail
+            // Создаем новые группы с обновленными секциями
+            foldedSections.map { group.copy(sections = it) }
+        }
+    }
+}
+
+// Функция, строящая выходной список групп
+fun buildOutput(groups: List<Group>, maxQuestionsCount: Int): List<Group> {
+    // Когда выходной список пуст
+    if (groups.isEmpty()) return emptyList()
+
+    // Берем первую группу и обрабатываем ее
+    val firstGroup = groups.first()
+    val processedGroups = processGroup(firstGroup, maxQuestionsCount)
+
+    // Рекурсивно строим оставшуюся часть выходного списка
+    return processedGroups + buildOutput(groups.drop(1), maxQuestionsCount)
 }
 
 ```
@@ -103,7 +134,13 @@ fun bundleStringCoRecursive(input: String, length: Int): List<String> {
 ```
 
 ### Выводы
-Одно из самых сложный занятий в данном формате. Не смог найти большое количество собственных
+Одно из самых сложных занятий в данном формате. Не смог найти большое количество собственных
 примеров, где такой подход был бы уместен, поэтому взял примеры из материала и реализовал
 их на языке котлин, попутно закрепив теорию. В каждом из приведенных примеров я пытался 
 анализировать, как должен выглядеть результат функции на основе входных данных, с помощью вопросов.
+В простых примерах код становился проще для понимания, но в более сложных уже не совсем понятно, как лучше.
+Пример 2 взят из рабочего проекта, переписанный код в данном случае получился сильно объемнее, и не сильно
+проще, возможно просто ко-рекурсивный подход тут не очень уместен, либо я не до конца понял его смысл.
+
+В любом случае, ранее не знал, что существуют разные подходы к написанию рекурсивных программ, и в будущем
+при столкновении со сложными рекурсивными типами данных буду стараться применять данную методологию.
