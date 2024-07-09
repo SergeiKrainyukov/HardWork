@@ -53,7 +53,7 @@ class UserViewModel(private val useCase: GetUserUseCase) : ViewModel() {
 
 // Activity class
 // Абстракция: Наблюдение за изменениями данных.
-// Этот код абстрагирует обновление пользовательского интерфейса при изменении данных, используя LiveData.
+// Aбстрагируем обновление пользовательского интерфейса при изменении данных, используя LiveData.
 class UserActivity : AppCompatActivity() {
     private lateinit var userViewModel: UserViewModel
 
@@ -76,34 +76,23 @@ class UserActivity : AppCompatActivity() {
 Абстракция: Работа с сетевыми запросами
 
 ```kotlin
-// Data class representing the response from the network
+// Абстракция: Модель данных сетевого ответа.
+// Абстрагируем сетевой ответ в виде объекта данных, который можно использовать в приложении.
 data class UserResponse(val id: Int, val name: String, val age: Int)
 
-
-// Абстракция: Модель данных сетевого ответа.
-// Этот код абстрагирует сетевой ответ в виде объекта данных, который можно использовать в приложении.
-
-
-// Retrofit service interface
+// Абстракция: Сетевой сервис.
+// Абстрагируем взаимодействие с сетевыми API, предоставляя методы для выполнения HTTP-запросов.
 interface ApiService {
     @GET("users/{id}")
     suspend fun getUser(@Path("id") id: Int): UserResponse
 }
 
-
-// Абстракция: Сетевой сервис.
-// Этот код абстрагирует взаимодействие с сетевыми API, предоставляя методы для выполнения HTTP-запросов.
-
-
-// Repository class
+// Абстракция: Репозиторий данных.
+// Абстрагируем источник данных, объединяя локальные и удаленные данные.
 class UserRepository(private val apiService: ApiService) {
     suspend fun getUser(id: Int): UserResponse {
         return apiService.getUser(id)
     }
-
-
-// Абстракция: Репозиторий данных.
-// Этот код абстрагирует источник данных, объединяя локальные и удаленные данные.
 }
 
 ```
@@ -113,7 +102,8 @@ class UserRepository(private val apiService: ApiService) {
 
 ```kotlin
 
-// BaseActivity class to handle common functionality
+// Абстракция: Общий функционал Activity.
+// Абстрагируем общие операции, такие как настройка макета и инициализация представлений, которые могут использоваться в наследниках.
 abstract class BaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -125,19 +115,15 @@ abstract class BaseActivity : AppCompatActivity() {
     abstract fun getLayoutId(): Int
 
     abstract fun initView()
-
-
-// Абстракция: Общий функционал Activity.
-// Этот код абстрагирует общие операции, такие как настройка макета и инициализация представлений, которые могут использоваться в наследниках.
-
+    
 }
 
-// Specific Activity class
+// Конкретная активити
 class MainActivity : BaseActivity() {
     override fun getLayoutId(): Int = R.layout.activity_main
 
     override fun initView() {
-        // Initialize views specific to this Activity
+        //...
     }
 }
 
@@ -147,18 +133,14 @@ class MainActivity : BaseActivity() {
 Абстракция: Управление элементами списка
 
 ```kotlin
-// Data class representing an item in the list
+// Абстракция: Элемент списка.
+// Абстрагируем данные элемента списка, которые будут отображаться в RecyclerView.
 data class ListItem(val id: Int, val title: String)
 
-
-// Абстракция: Элемент списка.
-// Этот код абстрагирует данные элемента списка, которые будут отображаться в RecyclerView.
-
-
-// Adapter class for RecyclerView
+// Абстракция: Адаптер для RecyclerView.
+// Абстрагируем отображение данных списка в пользовательском интерфейсе, используя ViewHolder для управления представлениями элементов.
 class ListAdapter(private val items: List<ListItem>) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
-
-    // ViewHolder class
+    
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val titleTextView: TextView = view.findViewById(R.id.titleTextView)
     }
@@ -175,22 +157,11 @@ class ListAdapter(private val items: List<ListItem>) : RecyclerView.Adapter<List
     }
 
     override fun getItemCount(): Int = items.size
-
-
-// Абстракция: Адаптер для RecyclerView.
-// Этот код абстрагирует отображение данных списка в пользовательском интерфейсе, используя ViewHolder для управления представлениями элементов.
-
+   
 }
 
 ```
-
-Эти примеры демонстрируют различные абстракции, которые помогают управлять сложностью кода в Android-приложениях, делая
-его более понятным и поддерживаемым.
-
-Напишите, как вы понимаете определение Дейкстры применительно к своей практике, как сможете его применять.
-ChatGPT
-Эдсгер Дейкстра был известен своим вкладом в развитие теории программирования, особенно его акцентом на важности
-структурированного и систематического подхода к написанию кода. Его идея о "новом семантическом уровне мышления", на
+Его идея о "новом семантическом уровне мышления", на
 котором можно быть "абсолютно точным", подразумевает, что разработчики должны стремиться к тому, чтобы их код был не
 просто работающим, но и понятным на более высоком уровне абстракции.
 
@@ -222,125 +193,6 @@ ChatGPT
    Применение: В практике это означает написание модульных тестов и использование зависимостей, которые могут быть легко
    заменены (например, с использованием инъекции зависимостей). В Android-разработке это может включать написание тестов
    для ViewModel и репозиториев, используя библиотеки вроде JUnit и Mockito для упрощения тестирования.
-   Примеры применения в практике
-
-
-1. Четкие абстракции и интерфейсы
-
-```kotlin
-   interface UserRepository {
-    suspend fun getUser(id: Int): User
-    suspend fun saveUser(user: User)
-}
-
-// Реализация UserRepository для работы с локальной базой данных
-class LocalUserRepository(private val userDao: UserDao) : UserRepository {
-    override suspend fun getUser(id: Int): User {
-        return userDao.getUserById(id)
-    }
-
-    override suspend fun saveUser(user: User) {
-        userDao.insert(user)
-    }
-}
-
-// Реализация UserRepository для работы с сетевым API
-class RemoteUserRepository(private val apiService: ApiService) : UserRepository {
-    override suspend fun getUser(id: Int): User {
-        val userResponse = apiService.getUser(id)
-        return User(userResponse.id, userResponse.name, userResponse.age)
-    }
-
-    override suspend fun saveUser(user: User) {
-        // Not implemented for remote repository
-    }
-}
-
-```
-
-2. Модульность и разделение ответственности
-
-```kotlin
-   // ViewModel для управления состоянием UI
-class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
-    val user: LiveData<User> = liveData {
-        val user = userRepository.getUser(1)
-        emit(user)
-    }
-}
-
-// Activity для отображения данных пользователя
-class UserActivity : AppCompatActivity() {
-    private lateinit var userViewModel: UserViewModel
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_user)
-
-        userViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
-        userViewModel.user.observe(this, Observer { user ->
-            findViewById<TextView>(R.id.userName).text = user.name
-            findViewById<TextView>(R.id.userAge).text = user.age.toString()
-        })
-    }
-
-}
-
-```
-
-3. Читаемость и поддерживаемость кода
-
-```kotlin
-// Комментарии и документация для методов
-
-/**
-
- * Репозиторий для работы с пользователями.
- */
-interface UserRepository {
-    /**
-     * Получить пользователя по ID.
-     * @param id ID пользователя
-     * @return Пользователь с указанным ID
-     */
-    suspend fun getUser(id: Int): User
-
-    /**
-     * Сохранить пользователя.
-     * @param user Пользователь для сохранения
-     */
-    suspend fun saveUser(user: User)
-}
-```
-
-4. Тестируемость
-
-```kotlin
-
-// Пример теста для ViewModel
-class UserViewModelTest {
-    private lateinit var userRepository: UserRepository
-    private lateinit var userViewModel: UserViewModel
-
-    @Before
-    fun setUp() {
-        userRepository = mock(UserRepository::class.java)
-        userViewModel = UserViewModel(userRepository)
-    }
-
-    @Test
-    fun testGetUser() = runBlocking {
-        val user = User(1, "John Doe", 30)
-        `when`(userRepository.getUser(1)).thenReturn(user)
-
-        val liveData = userViewModel.user
-        val observer = mock(Observer::class.java) as Observer<User>
-        liveData.observeForever(observer)
-
-        verify(observer).onChanged(user)
-    }
-}
-```
 
 Таким образом, применение принципов Дейкстры в практике Android-разработки помогает создавать более четкий, понятный
 и поддерживаемый код, способствующий эффективной командной работе и долгосрочной поддержке проекта .
