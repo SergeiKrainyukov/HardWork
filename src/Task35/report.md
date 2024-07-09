@@ -1,15 +1,14 @@
 ## Задание 35
 
-Приведем примеры абстракций из практики Android-разработки. Эти примеры будут включать основные аспекты разработки
-Android-приложений, такие как работа с базами данных, управление жизненным циклом, взаимодействие с сетевыми сервисами и
-обработка пользовательского интерфейса.
-
 Пример 1: Работа с Room (библиотека для работы с базами данных)
+
 Абстракция: Объект доступа к данным (DAO)
 
 ```kotlin
 
-// Entity class representing a table in the database
+// Абстракция: Таблица базы данных с полями id, name и age.
+// Бесконечное количество свойств пользователя в реальном мире отображается
+// в класс User с полями, необходимыми для работы системы.
 @Entity(tableName = "users")
 data class User(
     @PrimaryKey(autoGenerate = true) val id: Int,
@@ -18,10 +17,10 @@ data class User(
 )
 
 
-// Абстракция: Таблица базы данных с полями id, name и age.
 
-
-// Data Access Object (DAO) interface
+// Абстракция: Интерфейс доступа к данным.
+// Взаимодействуем с таблицей базы данных, предоставляя методы для вставки и извлечения данных.
+// При этом реализация взаимодействия с самой базой SQLite скрыта за интерфейсом.
 @Dao
 interface UserDao {
     @Insert
@@ -31,21 +30,12 @@ interface UserDao {
     suspend fun getUserById(id: Int): User?
 }
 
-
-// Абстракция: Интерфейс доступа к данным.
-// Этот код представляет абстракцию взаимодействия с таблицей базы данных, предоставляя методы для вставки и извлечения данных.
-
-
-// Database class
+// Абстракция: База данных.
+// Создаем абстракцию базы данных, включая определение DAO и управление версиями базы данных.
 @Database(entities = [User::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
 }
-
-
-// Абстракция: База данных.
-// Этот код создает абстракцию базы данных, включая определение DAO и управление версиями базы данных.
-
 ```
 
 Пример 2: Работа с ViewModel и LiveData
@@ -53,19 +43,17 @@ abstract class AppDatabase : RoomDatabase() {
 
 ```kotlin
 // ViewModel class
-class UserViewModel(application: Application) : AndroidViewModel(application) {
-    private val userDao: UserDao = AppDatabase.getDatabase(application).userDao()
-    val user: LiveData<User> = liveData {
-        emit(userDao.getUserById(1) ?: User(0, "Unknown", 0))
-    }
-
-
 // Абстракция: Управление состоянием UI.
 // Этот код абстрагирует бизнес-логику и хранение данных от пользовательского интерфейса, обеспечивая реактивное обновление UI.
-
+class UserViewModel(private val useCase: GetUserUseCase) : ViewModel() {
+    val user: LiveData<User> = liveData {
+        emit(useCase.getUserById(1) ?: User(0, "Unknown", 0))
+    }
 }
 
 // Activity class
+// Абстракция: Наблюдение за изменениями данных.
+// Этот код абстрагирует обновление пользовательского интерфейса при изменении данных, используя LiveData.
 class UserActivity : AppCompatActivity() {
     private lateinit var userViewModel: UserViewModel
 
@@ -79,11 +67,6 @@ class UserActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.userName).text = user.name
             findViewById<TextView>(R.id.userAge).text = user.age.toString()
         })
-
-
-// Абстракция: Наблюдение за изменениями данных.
-// Этот код абстрагирует обновление пользовательского интерфейса при изменении данных, используя LiveData.
-
     }
 }
 
