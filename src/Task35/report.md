@@ -17,18 +17,30 @@ data class User(
 )
 
 
-
 // Абстракция: Интерфейс доступа к данным.
 // Взаимодействуем с таблицей базы данных, предоставляя методы для вставки и извлечения данных.
 // При этом реализация взаимодействия с самой базой SQLite скрыта за интерфейсом.
-@Dao
-interface UserDao {
-    @Insert
-    suspend fun insert(user: User)
+interface BaseDao<T : Any> {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(list: List<T>): List<Long>
 
-    @Query("SELECT * FROM users WHERE id = :id")
-    suspend fun getUserById(id: Int): User?
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(obj: T): Long
+
+    @Update
+    suspend fun update(list: List<T>)
+
+    @Update
+    suspend fun update(obj: T)
+
+    @Upsert
+    suspend fun upsert(list: List<T>)
+
 }
+
+//Конкретный интерфейс
+@Dao
+interface UserDao : BaseDao<User>
 
 // Абстракция: База данных.
 // Создаем абстракцию базы данных, включая определение DAO и управление версиями базы данных.
@@ -38,42 +50,70 @@ abstract class AppDatabase : RoomDatabase() {
 }
 ```
 
-Пример 2: Работа с ViewModel и LiveData
-Абстракция: Управление состоянием UI с помощью ViewModel и LiveData
+Почему это хорошая абстракция:
+
+- Позволяет работать с различными объектами базы данных через общий интерфейс, не изменяя основной код.
+- Обеспечивает предсказуемое взаимодействие с различными реализациями базы данных.
+
+Пример 2: Работа со списками для отображения
+Абстракция: Управление отображением элементов списка на экране
 
 ```kotlin
-// ViewModel class
-// Абстракция: Управление состоянием UI.
-// Этот код абстрагирует бизнес-логику и хранение данных от пользовательского интерфейса, обеспечивая реактивное обновление UI.
-class UserViewModel(private val useCase: GetUserUseCase) : ViewModel() {
-    val user: LiveData<User> = liveData {
-        emit(useCase.getUserById(1) ?: User(0, "Unknown", 0))
+class DiffCallback<T> : DiffUtil.ItemCallback<ListItem<T>>() {
+    override fun areItemsTheSame(
+        oldItem: ListItem<T>,
+        newItem: ListItem<T>,
+    ): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(
+        oldItem: ListItem<T>,
+        newItem: ListItem<T>,
+    ): Boolean {
+        return oldItem.contentEquals(newItem)
     }
 }
 
-// Activity class
-// Абстракция: Наблюдение за изменениями данных.
-// Aбстрагируем обновление пользовательского интерфейса при изменении данных, используя LiveData.
-class UserActivity : AppCompatActivity() {
-    private lateinit var userViewModel: UserViewModel
+interface ListItem<T> {
+    val id: Int
+    val content: T
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_user)
-
-        userViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
-        userViewModel.user.observe(this, Observer { user ->
-            // Update UI with user data
-            findViewById<TextView>(R.id.userName).text = user.name
-            findViewById<TextView>(R.id.userAge).text = user.age.toString()
-        })
-    }
+    fun contentEquals(item: ListItem<T>): Boolean
 }
 
+data class AdaptPlanListItem(
+    override val id: Int,
+    //другие поля...
+) : ListItem<AdaptPlanListItem> {
+
+    override fun contentEquals(item: ListItem<AdaptPlanListItem>) = this == item
+
+    override val content: AdaptPlanListItem
+        get() = this
+
+}
 ```
+
+Почему это хорошая абстракция:
+
+- Универсальность: Можно использовать с любым типом данных, реализующим интерфейс ListItem<T>.
+- Модульность: Четко разделены обязанности сравнения идентификаторов и содержимого элементов.
+- Простота и читаемость: Код легко понимать и поддерживать благодаря четко определенным методам и интерфейсам.
+- Совместимость с DiffUtil: Реализация подходит для использования с DiffUtil в Android, что улучшает производительность
+  обновлений списков.
 
 Пример 3: Взаимодействие с сетевыми сервисами с использованием Retrofit
 Абстракция: Работа с сетевыми запросами
+
+Retrofit предоставляет хорошие абстракции для работы с HTTP-запросами и RESTful API, удовлетворяя требованиям
+обоснованности и точности:
+
+Обоснованность: Абстракции Retrofit позволяют верно отображать операции HTTP на методы интерфейсов и аннотации. Это
+обеспечивает интуитивно понятный интерфейс для разработчиков, скрывая низкоуровневые детали реализации.
+
+Точность: Преобразование данных через конвертеры и поддержка асинхронных вызовов позволяют точно и эффективно работать с
+данными, обеспечивая корректное отображение операций HTTP-запросов в объекты и методы.
 
 ```kotlin
 // Абстракция: Модель данных сетевого ответа.
@@ -97,73 +137,95 @@ class UserRepository(private val apiService: ApiService) {
 
 ```
 
-Пример 4: Управление жизненным циклом Activity
-Абстракция: Управление жизненным циклом и состоянием Activity
+Пример 4: Корутины в Котлин
+Абстракция: Управление асинхронными операциями
+
+Корутины в Kotlin предоставляют удобный и эффективный способ работы с асинхронным и параллельным программированием,
+предлагая высокоуровневые абстракции, которые делают код более читаемым и поддерживаемым.
+Рассмотрим, как корутины соответствуют требованиям обоснованности и точности,
+делая их хорошей абстракцией для асинхронного программирования.
+
+Например, корутины предоставляют безопасные механизмы для взаимодействия с многопоточными данными,
+такие как каналы (Channels) и безопасные контексты выполнения (Dispatchers),
+что упрощает написание безопасного многопоточного кода.
+
+```kotlin
+val channel = Channel<Int>()
+CoroutineScope(Dispatchers.Default).launch {
+    for (x in 1..5) channel.send(x * x)
+    channel.close()
+}
+
+runBlocking {
+    for (y in channel) println(y)
+}
+```
+
+При этом, низкоуровневое управление потоками выполнения программы скрыто от пользователя, а также данные абстракции
+отделены от абстракции домена и могут быть применены абсолютно в любом контексте.
+
+Пример 5: Управление состоянием экрана с использованием паттерна MVI в библиотеке MVIKotlin
+Абстракция: Управление состоянием экрана.
+
+MVIKotlin — это библиотека, созданная Аркадием Ивановым для реализации архитектурного паттерна Model-View-Intent (MVI) в
+Kotlin. Она предназначена для упрощения написания чистого и поддерживаемого кода в Android-приложениях. Рассмотрим эту
+библиотеку с точки зрения её абстракций, обоснованности и точности, и сравним её с требуемыми качествами хороших
+абстракций.
+
+1. Обоснованность (Soundness)
+   MVIKotlin предоставляет обоснованные абстракции, которые корректно отображают операции в архитектуре MVI на
+   высокоуровневые конструкции.
+
+Model-View-Intent (MVI): Этот паттерн разделяет приложение на три основные компоненты — Model (Модель), View (
+Представление) и Intent (Интент).
+Это разделение улучшает модульность и тестируемость кода, делая его более понятным и поддерживаемым.
+
+```kotlin
+interface MyFeature : Feature<Intent, State, Label>
+
+data class State(val counter: Int)
+data class Intent(val increment: Boolean)
+data class Label(val message: String)
+```
+
+2. Точность (Precision)
+
+MVIKotlin обеспечивает точность в управлении состояниями и событиями в рамках MVI-архитектуры.
+
+Предсказуемость состояния: Паттерн MVI, реализованный в MVIKotlin, обеспечивает однонаправленный поток данных, что
+делает состояния предсказуемыми и управляемыми. Это важно для точности отображения логики приложения на абстракции.
 
 ```kotlin
 
-// Абстракция: Общий функционал Activity.
-// Абстрагируем общие операции, такие как настройка макета и инициализация представлений, которые могут использоваться в наследниках.
-abstract class BaseActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(getLayoutId())
-        initView()
+store.states()
+    .onEach { state ->
+// обновление UI на основе нового состояния
+        view.render(state)
     }
-
-    @LayoutRes
-    abstract fun getLayoutId(): Int
-
-    abstract fun initView()
-    
-}
-
-// Конкретная активити
-class MainActivity : BaseActivity() {
-    override fun getLayoutId(): Int = R.layout.activity_main
-
-    override fun initView() {
-        //...
-    }
-}
-
+    .launchIn(lifecycleScope)
 ```
 
-Пример 5: Обработка событий пользовательского интерфейса с использованием RecyclerView и ViewHolder
-Абстракция: Управление элементами списка
+Изолированность побочных эффектов: MVIKotlin предоставляет механизмы для изолирования побочных эффектов, что улучшает
+предсказуемость и тестируемость кода.
 
 ```kotlin
-// Абстракция: Элемент списка.
-// Абстрагируем данные элемента списка, которые будут отображаться в RecyclerView.
-data class ListItem(val id: Int, val title: String)
-
-// Абстракция: Адаптер для RecyclerView.
-// Абстрагируем отображение данных списка в пользовательском интерфейсе, используя ViewHolder для управления представлениями элементов.
-class ListAdapter(private val items: List<ListItem>) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
-    
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val titleTextView: TextView = view.findViewById(R.id.titleTextView)
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.list_item, parent, false)
-        return ViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = items[position]
-        holder.titleTextView.text = item.title
-    }
-
-    override fun getItemCount(): Int = items.size
-   
-}
-
+class MyFeatureImpl : MyFeature, Feature<Intent, State, Label> by createFeature(
+    initialState = State(0),
+    reducer = { state, intent -> ... },
+    actor = { state, intent -> ... }
+)
 ```
-Его идея о "новом семантическом уровне мышления", на
-котором можно быть "абсолютно точным", подразумевает, что разработчики должны стремиться к тому, чтобы их код был не
-просто работающим, но и понятным на более высоком уровне абстракции.
+
+Сохранение состояния: MVIKotlin поддерживает сохранение и восстановление состояния, что обеспечивает точное отображение
+состояния приложения при изменении конфигурации или восстановлении после завершения работы.
+
+```kotlin
+
+val store = storeFactory.create(
+    initialState = savedInstanceState.getOrDefault(State(0)),
+    bootstrapper = ...
+)
+```
 
 Применение идеи Дейкстры в практике программирования
 
@@ -196,6 +258,5 @@ class ListAdapter(private val items: List<ListItem>) : RecyclerView.Adapter<List
 
 Таким образом, применение принципов Дейкстры в практике Android-разработки помогает создавать более четкий, понятный
 и поддерживаемый код, способствующий эффективной командной работе и долгосрочной поддержке проекта .
-
 
 ## Выводы
