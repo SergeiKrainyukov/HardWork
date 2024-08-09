@@ -1,7 +1,3 @@
-import java.util.*
-import javax.xml.stream.events.Comment
-
-
 // Миксин с базовым поведением
 interface Printable {
     fun print()
@@ -30,12 +26,22 @@ class BasicColorable : Colorable {
 class Printer : Printable by BasicPrintable(), Colorable by BasicColorable()
 
 fun main() {
-//    val printer = Printer()
-//
-//    printer.print() // Вывод: Printing...
-//    printer.setColor("Red") // Вывод: Setting color to Red
-    val scanner = Scanner(System.`in`)
-    val a = scanner.nextInt()
-    val b = scanner.nextInt()
-    print(a + b)
+    println("Введите значение")
+    val user: String? = readLine()
+    val x: Double = user!!.toDouble()
+    println("Введите значение")
+    val user1: String? = readLine()
+    val y: Double = user1!!.toDouble()
+    println("Введите значение")
+    val user2: String? = readLine()
+    val z: Double = user2!!.toDouble()
+    if (x > y && x > z || x == y && x == z) {
+        println(x)
+    }
+    if (y > x && y > z || y == x && y == z) {
+        println(y)
+    }
+    if (z > x && z > y || z == y && z == y) {
+        println(z)
+    }
 }
