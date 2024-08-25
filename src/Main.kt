@@ -26,22 +26,23 @@ class BasicColorable : Colorable {
 class Printer : Printable by BasicPrintable(), Colorable by BasicColorable()
 
 fun main() {
-    println("Введите значение")
-    val user: String? = readLine()
-    val x: Double = user!!.toDouble()
-    println("Введите значение")
-    val user1: String? = readLine()
-    val y: Double = user1!!.toDouble()
-    println("Введите значение")
-    val user2: String? = readLine()
-    val z: Double = user2!!.toDouble()
-    if (x > y && x > z || x == y && x == z) {
-        println(x)
-    }
-    if (y > x && y > z || y == x && y == z) {
-        println(y)
-    }
-    if (z > x && z > y || z == y && z == y) {
-        println(z)
-    }
+//    println("Введите значение")
+//    val user: String? = readLine()
+//    val x: Double = user!!.toDouble()
+//    println("Введите значение")
+//    val user1: String? = readLine()
+//    val y: Double = user1!!.toDouble()
+//    println("Введите значение")
+//    val user2: String? = readLine()
+//    val z: Double = user2!!.toDouble()
+//    if (x > y && x > z || x == y && x == z) {
+//        println(x)
+//    }
+//    if (y > x && y > z || y == x && y == z) {
+//        println(y)
+//    }
+//    if (z > x && z > y || z == y && z == y) {
+//        println(z)
+//    }
+    println(-5%2)
 }
