@@ -46,3 +46,9 @@ fun main() {
 //    }
     println(-5%2)
 }
+
+class TTT (
+    val s: String
+) {
+
+}
