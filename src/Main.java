@@ -48,12 +48,3 @@ class Main {
         return duplicateCount;
     }
 }
-
-class TTT {
-
-    String s;
-
-    public TTT(String s) {
-        this.s = s;
-    }
-}
