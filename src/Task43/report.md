@@ -7,19 +7,31 @@
 ### Было
 
 ```kotlin
-class User(val name: String, val age: Int)
-
-class UserService {
-    fun getUserInfo(user: User): String {
-        return "${user.name} is ${user.age} years old"
-    }
+interface WeatherService {
+    fun getTemperature(city: String): Double
 }
 
-class UserServiceTest {
+class WeatherAppTest {
+
+    private val weatherService: WeatherService = DefaultWeatherService()
+    private val weatherApp = WeatherApp(weatherService)
+
     @Test
-    fun testGetUserInfo() {
-        val user = User("Alice", 30)
-        assertEquals("Alice is 30 years old", UserService().getUserInfo(user))
+    fun testDisplayTemperatureForLondon() {
+        val result = weatherApp.displayTemperature("London")
+        assertEquals("The temperature in London is 15.0°C", result)
+    }
+
+    @Test
+    fun testDisplayTemperatureForParis() {
+        val result = weatherApp.displayTemperature("Paris")
+        assertEquals("The temperature in Paris is 20.0°C", result)
+    }
+
+    @Test
+    fun testDisplayTemperatureForNewYork() {
+        val result = weatherApp.displayTemperature("New York")
+        assertEquals("The temperature in New York is 25.0°C", result)
     }
 }
 ```
@@ -27,40 +39,48 @@ class UserServiceTest {
 ### Стало
 
 ```kotlin
-interface UserRepository {
-    fun getUserInfo(userId: Int): User
+interface WeatherService {
+    fun getTemperature(city: String): Double
 }
 
-class UserService(private val userRepository: UserRepository) {
-    fun getUserInfo(userId: Int): String {
-        val user = userRepository.getUserInfo(userId)
-        return "${user.name} is ${user.age} years old"
+class WeatherApp(private val weatherService: WeatherService) {
+    fun displayTemperature(city: String): String {
+        val temp = weatherService.getTemperature(city)
+        return "The temperature in $city is $temp°C"
     }
 }
 
-class UserServiceTest {
+class WeatherAppTest {
+    private val weatherServiceMock: WeatherService = mock(WeatherService::class.java)
+    private val weatherApp = WeatherApp(weatherServiceMock)
+
     @Test
-    fun testGetUserInfo() {
-    // Мокируем репозиторий пользователей
-    val mockUserRepository = mock(UserRepository::class.java)
-    val user = User("Alice", 30)
+    fun testDisplayTemperatureLondon() {
+        `when`(weatherServiceMock.getTemperature("London")).thenReturn(15.0)
 
-        // Настраиваем поведение мока
-        `when`(mockUserRepository.getUserInfo(1)).thenReturn(user)
-
-        val userService = UserService(mockUserRepository)
-        assertEquals("Alice is 30 years old", userService.getUserInfo(1))
+        val result = weatherApp.displayTemperature("London")
+        assertEquals("The temperature in London is 15.0°C", result)
     }
+    
+    @Test
+    fun testDisplayTemperatureParis() {
+        `when`(weatherServiceMock.getTemperature("Paris")).thenReturn(20.0)
+
+        val resultParis = weatherApp.displayTemperature("Paris")
+        assertEquals("The temperature in Paris is 20.0°C", resultParis)
+    }
+    
+    
 }
 ```
 
 #### Абстрактный эффект
 
-Тест проверяет форматирование строки с информацией о пользователе, не завися от конкретной реализации репозитория.
+При вызове displayTemperature() должен вызываться сервис WeatherService и возвращать корректное значение независимо от реализации
 
 #### Явность эффекта
 
-Эффект явно выражен, и изменения в методе getUserInfo не повлияют на тест, если интерфейс останется неизменным.
+Эффект явно выражен, и изменения в методе getTemperature() не повлияют на тест, если интерфейс останется неизменным.
 
 #### Использование моков
 
@@ -71,16 +91,31 @@ class UserServiceTest {
 ### Было
 
 ```kotlin
-class Calculator {
-    fun add(a: Int, b: Int): Int {
-        return a + b
-    }
+interface PaymentProcessor {
+    fun processPayment(amount: Double): String
 }
 
-class CalculatorTest {
+class CheckoutTest {
+
+    private val paymentProcessor: PaymentProcessor = DefaultPaymentProcessor()
+    private val checkout = Checkout(paymentProcessor)
+
     @Test
-    fun testAdd() {
-        assertEquals(5, Calculator().add(2, 3))
+    fun testCheckoutSuccessfulPayment() {
+        val result = checkout.checkout(100.0)
+        assertEquals("Payment of $100.0 processed successfully.", result)
+    }
+
+    @Test
+    fun testCheckoutZeroPayment() {
+        val result = checkout.checkout(0.0)
+        assertEquals("Invalid payment amount.", result)
+    }
+
+    @Test
+    fun testCheckoutNegativePayment() {
+        val result = checkout.checkout(-50.0)
+        assertEquals("Invalid payment amount.", result)
     }
 }
 ```
@@ -88,43 +123,37 @@ class CalculatorTest {
 ### Стало
 
 ```kotlin
-interface Calculator {
-    fun add(a: Int, b: Int): Int
+interface PaymentProcessor {
+    fun processPayment(amount: Double): String
 }
 
-class SimpleCalculator : Calculator {
-    override fun add(a: Int, b: Int): Int {
-        return a + b
+class Checkout(private val paymentProcessor: PaymentProcessor) {
+    fun checkout(amount: Double): String {
+        return paymentProcessor.processPayment(amount)
     }
 }
 
-class CalculatorService(private val calculator: Calculator) {
-    fun calculateSum(a: Int, b: Int): Int {
-        return calculator.add(a, b)
-    }
-}
+class CheckoutTest {
+    private val paymentProcessorMock: PaymentProcessor = mock(PaymentProcessor::class.java)
+    private val checkout = Checkout(paymentProcessorMock)
 
-class CalculatorServiceTest {
     @Test
-    fun testCalculateSum() {
-        val mockCalculator = mock(Calculator::class.java)
+    fun testCheckout() {
+        `when`(paymentProcessorMock.processPayment(100.0)).thenReturn("Payment Successful")
 
-        // Настраиваем поведение мока
-        `when`(mockCalculator.add(2, 3)).thenReturn(5)
-
-        val calculatorService = CalculatorService(mockCalculator)
-        assertEquals(5, calculatorService.calculateSum(2, 3))
+        val result = checkout.checkout(100.0)
+        assertEquals("Payment Successful", result)
     }
 }
 ```
 
 #### Абстрактный эффект
 
-Тест проверяет сложение двух чисел через сервис.
+При вызове processPayment() должен вызываться PaymentProcessor и возвращать корректное значение независимо от реализации
 
 #### Явность эффекта
 
-Эффект явно выражен; изменения в реализации метода add не повлияют на тест.
+Эффект явно выражен; изменения в реализации метода processPayment не повлияют на тест.
 
 #### Использование моков
 
@@ -216,19 +245,19 @@ class DatabaseTest {
 
 ```kotlin
 interface Database {
-fun fetchUser(id: Int): User?
+    fun fetchUser(id: Int): User?
 }
 
 class UserService(private val database: Database) {
-fun getUserName(id: Int): String? {
-return database.fetchUser(id)?.name
-}
+    fun getUserName(id: Int): String? {
+        return database.fetchUser(id)?.name
+    }
 }
 
 class UserServiceTest {
-@Test
-fun testGetUserName() {
-val mockDatabase = mock(Database::class.java)
+    @Test
+    fun testGetUserName() {
+        val mockDatabase = mock(Database::class.java)
 
         // Настраиваем поведение мока
         `when`(mockDatabase.fetchUser(1)).thenReturn(User("Bob", 25))
@@ -258,17 +287,17 @@ val mockDatabase = mock(Database::class.java)
 
 ```kotlin
 object Utility {
-fun formatDate(date: LocalDate): String {
-return date.toString()
-}
+    fun formatDate(date: LocalDate): String {
+        return date.toString()
+    }
 }
 
 class UtilityTest {
-@Test
-fun testFormatDate() {
-val date = LocalDate.of(2024, 10, 19)
-assertEquals("2024-10-19", Utility.formatDate(date))
-}
+    @Test
+    fun testFormatDate() {
+        val date = LocalDate.of(2024, 10, 19)
+        assertEquals("2024-10-19", Utility.formatDate(date))
+    }
 }
 ```
 

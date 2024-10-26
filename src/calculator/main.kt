@@ -10,27 +10,29 @@ fun main() {
 //    println(calculateV2("BIT", "BYTE", 2048.0))
 }
 
-fun calculate(typeFrom: String, typeTo: String, valueFrom: Double): Double {
-    val entryTypeFrom = TYPE.valueOf(typeFrom)
-    val entryTypeTo = TYPE.valueOf(typeTo)
+class Calculator {
+    fun calculate(typeFrom: String, typeTo: String, valueFrom: Double): Double {
+        val entryTypeFrom = TYPE.valueOf(typeFrom)
+        val entryTypeTo = TYPE.valueOf(typeTo)
 
-    val realTypeFrom = RealType(
-        value = valueFrom,
-        type = entryTypeFrom
-    )
+        val realTypeFrom = RealType(
+            value = valueFrom,
+            type = entryTypeFrom
+        )
 
-    var realTypeTo = realTypeFrom
+        var realTypeTo = realTypeFrom
 
-    return if (entryTypeFrom.ordinal < entryTypeTo.ordinal) {
-        repeat(entryTypeTo.ordinal - entryTypeFrom.ordinal) {
-            realTypeTo = realTypeTo.next()
+        return if (entryTypeFrom.ordinal < entryTypeTo.ordinal) {
+            repeat(entryTypeTo.ordinal - entryTypeFrom.ordinal) {
+                realTypeTo = realTypeTo.next()
+            }
+            realTypeTo.value
+        } else {
+            repeat(entryTypeFrom.ordinal - entryTypeTo.ordinal) {
+                realTypeTo = realTypeTo.previous()
+            }
+            realTypeTo.value
         }
-        realTypeTo.value
-    } else {
-        repeat(entryTypeFrom.ordinal - entryTypeTo.ordinal) {
-            realTypeTo = realTypeTo.previous()
-        }
-        realTypeTo.value
     }
 }
 
